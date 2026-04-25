@@ -1,0 +1,31 @@
+{
+    "image": "python:3.12-slim",
+    "runArgs": [
+        "--name=dev_hackmd_sync",
+        "--env-file",
+        ".env"
+    ],
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "[python]": {
+                    "editor.defaultFormatter": "charliermarsh.ruff",
+                    "editor.formatOnSave": true,
+                    "editor.codeActionsOnSave": {
+                        "source.fixAll": "explicit",
+                        "source.organizeImports": "explicit"
+                    }
+                }
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "charliermarsh.ruff",
+                "redhat.vscode-yaml",
+                "eamodio.gitlens"
+            ]
+        }
+    },
+    "postCreateCommand": "python -m pip install --upgrade pip && pip install -r requirements-dev.txt"
+}
