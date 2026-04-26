@@ -17,7 +17,8 @@ See `README.md` for the full subcommand reference.
 
 ## Execution environment
 
-- **No host `python3` for project code**: do not run `python3 hackmd.py ...` (or import the project) on the host. Use `./hackmd.sh ...` — it runs the same code in a Docker container (currently `python:3.12-slim`).
+- **No host `python3` for project code**: do not run `python3 hackmd.py ...` (or import the project) on the host. Use `./hackmd.sh ...` — it runs the script via the self-contained `hackmd-sync:local` image (auto-built from `Dockerfile` on first run and whenever `hackmd.py` changes).
+- **File arguments resolve against `$PWD`**: `./hackmd.sh` mounts the current working directory at `/workdir` inside the container. So `./hackmd.sh create note.md` reads `$PWD/note.md`. Files outside `$PWD` (e.g. `/tmp/foo.md`) are NOT visible — pipe via stdin (`cat /tmp/foo.md | ./hackmd.sh create -`) or `cd` to the file's directory first.
 - **Ad-hoc Python scripts**: when writing a one-off Python script (test scaffolding, external-system simulation, browser automation, etc.), run it via `docker run --rm ...` with an image appropriate for the task — Claude picks the image based on what the script needs (`python:3.12-slim` for stdlib, `mcr.microsoft.com/playwright/python` for browser automation, etc.). Never `pip install` packages on the host.
 - **Stdlib-only JSON parsing on host is OK** — e.g. `./hackmd.sh get <id> --meta | python3 -c "import sys, json; ..."` for inspecting output. It is an output filter, not project execution, and installs no packages.
 - **Anything else that needs host `python3`**: stop and ask the user for temporary permission, with a brief justification of why the container path will not work.
