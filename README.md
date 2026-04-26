@@ -27,13 +27,15 @@ python hackmd.py delete <noteId>
 
 ### One-shot from host (no devcontainer)
 
-`hackmd.sh` runs the script in a throwaway `python:3.12-slim` container. It auto-loads `HACKMD_API_TOKEN` from `.env` (or from your shell environment):
+`hackmd.sh` runs the script via a self-contained Docker image (`hackmd-sync:local`) built from `Dockerfile`. The image is auto-built on first use and rebuilt whenever `hackmd.py` changes (mtime comparison). It auto-loads `HACKMD_API_TOKEN` from `.env` (or from your shell environment):
 
 ```bash
 ./hackmd.sh list
 ./hackmd.sh get <noteId> > note.md
 echo "# inline md" | ./hackmd.sh create - --title "From stdin"
 ```
+
+File arguments resolve against your **current working directory** (mounted at `/workdir` inside the container). So `./hackmd.sh create note.md` reads `$PWD/note.md` regardless of which directory you run from.
 
 ## Subcommands
 
