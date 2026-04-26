@@ -27,10 +27,9 @@ python hackmd.py delete <noteId>
 
 ### One-shot from host (no devcontainer)
 
-`hackmd.sh` runs the script in a throwaway `python:3.12-slim` container:
+`hackmd.sh` runs the script in a throwaway `python:3.12-slim` container. It auto-loads `HACKMD_API_TOKEN` from `.env` (or from your shell environment):
 
 ```bash
-export HACKMD_API_TOKEN=your_token
 ./hackmd.sh list
 ./hackmd.sh get <noteId> > note.md
 echo "# inline md" | ./hackmd.sh create - --title "From stdin"

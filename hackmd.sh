@@ -1,18 +1,27 @@
 #!/usr/bin/env bash
 # Run hackmd.py inside a throwaway python:3.12-slim container.
-# Usage: HACKMD_API_TOKEN=xxx ./hackmd.sh list
-#        HACKMD_API_TOKEN=xxx ./hackmd.sh get <noteId>
-#        HACKMD_API_TOKEN=xxx ./hackmd.sh create note.md --title "Hello"
-#        HACKMD_API_TOKEN=xxx ./hackmd.sh update <noteId> note.md
-#        HACKMD_API_TOKEN=xxx ./hackmd.sh delete <noteId>
+# HACKMD_API_TOKEN is auto-loaded from .env if present, or read from the shell env.
+# Usage: ./hackmd.sh list
+#        ./hackmd.sh get <noteId>
+#        ./hackmd.sh create note.md --title "Hello"
+#        ./hackmd.sh update <noteId> note.md
+#        ./hackmd.sh delete <noteId>
 set -euo pipefail
 
-if [[ -z "${HACKMD_API_TOKEN:-}" ]]; then
-    echo "HACKMD_API_TOKEN env var is required" >&2
-    exit 1
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Auto-load HACKMD_API_TOKEN from .env when not already exported.
+if [[ -z "${HACKMD_API_TOKEN:-}" && -f "${SCRIPT_DIR}/.env" ]]; then
+    set -a
+    # shellcheck disable=SC1091
+    source "${SCRIPT_DIR}/.env"
+    set +a
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -z "${HACKMD_API_TOKEN:-}" ]]; then
+    echo "HACKMD_API_TOKEN env var is required (set in .env or export it)" >&2
+    exit 1
+fi
 
 # -i so stdin can be piped in (`echo '# md' | ./hackmd.sh create -`)
 # --network host is unnecessary; bridge is fine for outbound HTTPS
