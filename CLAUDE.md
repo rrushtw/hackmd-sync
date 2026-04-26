@@ -14,3 +14,9 @@ See `README.md` for the full subcommand reference.
 - **Save before edit**: when the user wants to edit a note, write the fetched markdown to a local file first (`./hackmd.sh get <id> > note.md`), so changes can be diffed before being pushed back with `update`.
 - **Confirm destructive ops**: always check with the user before `delete`, or before an `update` that overwrites a note Claude has not just fetched.
 - **No allowlist**: each `./hackmd.sh` call will trigger a permission prompt; this is intentional. Do not add the script to `.claude/settings.json`.
+
+## Tags
+
+- **Set tags with `--tag` (repeatable)** on `create` or `update`: `./hackmd.sh create note.md --title T --tag work --tag draft`.
+- **`update` preserves tags by default** — an `update` with no `--tag` will not touch existing tags. To wipe them, pass `--clear-tags`.
+- **Do NOT use YAML front-matter** (e.g. `tags: foo, bar` at the top of the markdown) to set tags. HackMD's editor parses front-matter on Ctrl+S, but the API does not — so tags set that way only appear after a human opens and saves the note in the UI.

@@ -57,13 +57,20 @@ def cmd_create(args, token):
         "readPermission": args.read_perm,
         "writePermission": args.write_perm,
     }
+    if args.tag:
+        payload["tags"] = args.tag
     note = request("POST", "/notes", token, payload)
     print(f"Created: {note['id']}\t{note.get('publishLink', '')}")
 
 
 def cmd_update(args, token):
     content = sys.stdin.read() if args.file == "-" else open(args.file, encoding="utf-8").read()
-    request("PATCH", f"/notes/{args.note_id}", token, {"content": content})
+    payload = {"content": content}
+    if args.clear_tags:
+        payload["tags"] = []
+    elif args.tag:
+        payload["tags"] = args.tag
+    request("PATCH", f"/notes/{args.note_id}", token, payload)
     print(f"Updated: {args.note_id}")
 
 
@@ -88,11 +95,18 @@ def main():
     p_create.add_argument("--title", default="Untitled")
     p_create.add_argument("--read-perm", default="owner", choices=["owner", "signed_in", "guest"])
     p_create.add_argument("--write-perm", default="owner", choices=["owner", "signed_in", "guest"])
+    p_create.add_argument("--tag", action="append", default=[],
+                          help="Tag to attach (repeatable). e.g. --tag work --tag draft")
     p_create.set_defaults(func=cmd_create)
 
     p_update = sub.add_parser("update", help="Replace a note's content from a file ('-' for stdin)")
     p_update.add_argument("note_id")
     p_update.add_argument("file")
+    update_tags = p_update.add_mutually_exclusive_group()
+    update_tags.add_argument("--tag", action="append", default=[],
+                             help="Replace tags (repeatable). Omit to leave existing tags unchanged.")
+    update_tags.add_argument("--clear-tags", action="store_true",
+                             help="Remove all tags from the note.")
     p_update.set_defaults(func=cmd_update)
 
     p_del = sub.add_parser("delete", help="Delete a note")

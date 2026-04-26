@@ -41,6 +41,6 @@ echo "# inline md" | ./hackmd.sh create - --title "From stdin"
 | :--- | :--- |
 | `list` | List all your notes (id + title) |
 | `get <noteId> [--meta]` | Print markdown to stdout (`--meta` for full JSON) |
-| `create <file> [--title T] [--read-perm P] [--write-perm P]` | Create a note (`-` reads stdin) |
-| `update <noteId> <file>` | Replace note content (`-` reads stdin) |
+| `create <file> [--title T] [--tag T ...] [--read-perm P] [--write-perm P]` | Create a note (`-` reads stdin). `--tag` is repeatable. |
+| `update <noteId> <file> [--tag T ...] [--clear-tags]` | Replace note content (`-` reads stdin). `--tag` replaces existing tags; `--clear-tags` empties them; pass neither to leave tags unchanged. |
 | `delete <noteId>` | Delete a note |
