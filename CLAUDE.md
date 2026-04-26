@@ -1,0 +1,29 @@
+# hackmd-sync — guide for Claude
+
+A small Python CLI for CRUD on HackMD notes via the official API. Designed so Claude can drive it on the user's behalf.
+
+## When to use this tool
+
+When the user asks Claude to **pull / read / fetch / list / create / update / delete** a HackMD note, run `./hackmd.sh <subcommand>` from the repo root. `HACKMD_API_TOKEN` is auto-loaded from `.env`.
+
+See `README.md` for the full subcommand reference.
+
+## Conventions
+
+- **Prefer id over title**: if the user gives a note id, use it directly with `./hackmd.sh get <id>`. Only when they give just a title, run `./hackmd.sh list` first to resolve the id, then `get <id>`.
+- **Save before edit**: when the user wants to edit a note, write the fetched markdown to a local file first (`./hackmd.sh get <id> > note.md`), so changes can be diffed before being pushed back with `update`.
+- **Confirm destructive ops**: always check with the user before `delete`, or before an `update` that overwrites a note Claude has not just fetched.
+- **No allowlist**: each `./hackmd.sh` call will trigger a permission prompt; this is intentional. Do not add the script to `.claude/settings.json`.
+
+## Execution environment
+
+- **No host `python3` for project code**: do not run `python3 hackmd.py ...` (or import the project) on the host. Use `./hackmd.sh ...` — it runs the same code in a Docker container (currently `python:3.12-slim`).
+- **Ad-hoc Python scripts**: when writing a one-off Python script (test scaffolding, external-system simulation, browser automation, etc.), run it via `docker run --rm ...` with an image appropriate for the task — Claude picks the image based on what the script needs (`python:3.12-slim` for stdlib, `mcr.microsoft.com/playwright/python` for browser automation, etc.). Never `pip install` packages on the host.
+- **Stdlib-only JSON parsing on host is OK** — e.g. `./hackmd.sh get <id> --meta | python3 -c "import sys, json; ..."` for inspecting output. It is an output filter, not project execution, and installs no packages.
+- **Anything else that needs host `python3`**: stop and ask the user for temporary permission, with a brief justification of why the container path will not work.
+
+## Tags
+
+- **Set tags with `--tag` (repeatable)** on `create` or `update`: `./hackmd.sh create note.md --title T --tag work --tag draft`.
+- **`update` preserves tags by default** — an `update` with no `--tag` will not touch existing tags. To wipe them, pass `--clear-tags`.
+- **Do NOT use YAML front-matter** (e.g. `tags: foo, bar` at the top of the markdown) to set tags. HackMD's editor parses front-matter on Ctrl+S, but the API does not — so tags set that way only appear after a human opens and saves the note in the UI.
