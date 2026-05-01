@@ -31,7 +31,14 @@ def request(method, path, token, payload=None):
             body = resp.read().decode("utf-8")
             return json.loads(body) if body else None
     except urllib.error.HTTPError as e:
-        sys.stderr.write(f"HTTP {e.code} {e.reason}: {e.read().decode('utf-8', 'replace')}\n")
+        body = e.read().decode("utf-8", "replace")
+        sys.stderr.write(f"HTTP {e.code} {e.reason}: {body}\n")
+        if e.code == 403:
+            sys.stderr.write(
+                "Hint: 403 usually means you are not the owner of this note. "
+                "Only the owner can delete a note or change its permissions; "
+                "shared collaborators can only get/update content.\n"
+            )
         sys.exit(1)
 
 
