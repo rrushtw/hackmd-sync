@@ -15,6 +15,18 @@ See `README.md` for the full subcommand reference.
 - **Confirm destructive ops**: always check with the user before `delete`, or before an `update` that overwrites a note Claude has not just fetched.
 - **No allowlist**: each `./hackmd.sh` call will trigger a permission prompt; this is intentional. Do not add the script to `.claude/settings.json`.
 
+## Ownership scope (shared / non-owned notes)
+
+`./hackmd.sh list` calls `GET /v1/notes`, which only returns notes in the user's **own workspace** (notes they own). Notes that someone else owns and shared with them — even with edit permission — **do not appear** in `list`. This is a HackMD API limitation; do not assume a missing note from `list` means the note doesn't exist.
+
+Per-note operations on a known `noteId` work the same regardless of ownership, because the API gates them on per-note permission rather than ownership:
+
+- `get <noteId>` works if the user has read permission.
+- `update <noteId>` works if the user has write permission. The CLI sends only `content` (and `tags` when explicitly requested) — it never sends `readPermission` / `writePermission`, so it won't trip the "only owner can change permissions" rule.
+- `delete <noteId>` is owner-only and will fail with HTTP 403 on a shared note. The CLI surfaces a hint in stderr when this happens.
+
+When the user references a note by URL or share link, extract the `noteId` from the path segment after `https://hackmd.io/` and use `get` / `update` directly — do not first `list` to "find" it.
+
 ## Execution environment
 
 - **No host `python3` for project code**: do not run `python3 hackmd.py ...` (or import the project) on the host. Use `./hackmd.sh ...` — it runs the script via the self-contained `hackmd-sync:local` image (auto-built from `Dockerfile` on first run and whenever `hackmd.py` changes).

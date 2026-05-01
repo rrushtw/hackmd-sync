@@ -41,8 +41,22 @@ File arguments resolve against your **current working directory** (mounted at `/
 
 | Command | Description |
 | :--- | :--- |
-| `list` | List all your notes (id + title) |
+| `list` | List notes in your own workspace (id + title). Does **not** include notes shared with you — see [Notes shared with you](#notes-shared-with-you). |
 | `get <noteId> [--meta]` | Print markdown to stdout (`--meta` for full JSON) |
 | `create <file> [--title T] [--tag T ...] [--read-perm P] [--write-perm P]` | Create a note (`-` reads stdin). `--tag` is repeatable. |
 | `update <noteId> <file> [--tag T ...] [--clear-tags]` | Replace note content (`-` reads stdin). `--tag` replaces existing tags; `--clear-tags` empties them; pass neither to leave tags unchanged. |
-| `delete <noteId>` | Delete a note |
+| `delete <noteId>` | Delete a note (owner only — see [Notes shared with you](#notes-shared-with-you)) |
+
+## Notes shared with you
+
+The HackMD API's `GET /v1/notes` only returns notes in **your own workspace** (notes you created / own). Notes that someone else owns and has shared with you — even with edit permission — **do not appear in `list`**. This is a HackMD API limitation, not a `hackmd-sync` bug.
+
+To work with a shared note you must already know its `noteId` (the segment after `https://hackmd.io/` in the share link). Once you have it:
+
+| Operation | Works on shared note? | Why |
+| :--- | :--- | :--- |
+| `get <noteId>` | ✅ if you have read permission | API checks per-note permission, not ownership |
+| `update <noteId>` | ✅ if you have write permission | Only `content` (and optional `tags`) are sent — no permission fields |
+| `delete <noteId>` | ❌ owner-only | The API returns HTTP 403 for non-owners |
+
+Practical workflow for syncing shared notes: keep a small manifest (e.g. `.hackmd-notes.json` mapping local path → noteId) in the project that uses them, and loop `./hackmd.sh get <id> > <path>` over it.
