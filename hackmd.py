@@ -15,6 +15,14 @@ import urllib.request
 API_BASE = "https://api.hackmd.io/v1"
 
 
+class HackMDHTTPError(Exception):
+    def __init__(self, code, reason, body):
+        self.code = code
+        self.reason = reason
+        self.body = body
+        super().__init__(f"HTTP {code} {reason}: {body}")
+
+
 def request(method, path, token, payload=None):
     url = f"{API_BASE}{path}"
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
@@ -32,14 +40,7 @@ def request(method, path, token, payload=None):
             return json.loads(body) if body else None
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "replace")
-        sys.stderr.write(f"HTTP {e.code} {e.reason}: {body}\n")
-        if e.code == 403:
-            sys.stderr.write(
-                "Hint: 403 usually means you are not the owner of this note. "
-                "Only the owner can delete a note or change its permissions; "
-                "shared collaborators can only get/update content.\n"
-            )
-        sys.exit(1)
+        raise HackMDHTTPError(e.code, e.reason, body)
 
 
 def cmd_list(args, token):
@@ -77,7 +78,34 @@ def cmd_update(args, token):
         payload["tags"] = []
     elif args.tag:
         payload["tags"] = args.tag
-    request("PATCH", f"/notes/{args.note_id}", token, payload)
+    try:
+        request("PATCH", f"/notes/{args.note_id}", token, payload)
+    except HackMDHTTPError as patch_err:
+        if patch_err.code != 403:
+            raise
+        # HackMD's API has been observed to return 403 even when the PATCH
+        # actually persisted server-side. Re-fetch and compare what we sent;
+        # if everything matches, treat as success.
+        try:
+            note = request("GET", f"/notes/{args.note_id}", token)
+        except HackMDHTTPError:
+            raise patch_err
+        mismatched = []
+        if note.get("content") != payload["content"]:
+            mismatched.append("content")
+        if "tags" in payload and (note.get("tags") or []) != payload["tags"]:
+            mismatched.append("tags")
+        if mismatched:
+            sys.stderr.write(
+                f"PATCH returned 403 and these fields did not persist: "
+                f"{', '.join(mismatched)}\n"
+            )
+            raise patch_err
+        sys.stderr.write(
+            "Warning: PATCH returned HTTP 403, but a follow-up GET shows all "
+            "sent fields persisted. Treating as success (HackMD's API "
+            "occasionally reports 403 on a PATCH that actually succeeded).\n"
+        )
     print(f"Updated: {args.note_id}")
 
 
@@ -125,7 +153,17 @@ def main():
     token = os.environ.get("HACKMD_API_TOKEN")
     if not token:
         sys.exit("HACKMD_API_TOKEN env var is required")
-    args.func(args, token)
+    try:
+        args.func(args, token)
+    except HackMDHTTPError as e:
+        sys.stderr.write(f"{e}\n")
+        if e.code == 403:
+            sys.stderr.write(
+                "Hint: 403 usually means you are not the owner of this note. "
+                "Only the owner can delete a note or change its permissions; "
+                "shared collaborators can only get/update content.\n"
+            )
+        sys.exit(1)
 
 
 if __name__ == "__main__":
