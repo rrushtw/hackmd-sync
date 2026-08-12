@@ -13,6 +13,7 @@ See `README.md` for the full subcommand reference.
 - **Prefer id over title**: if the user gives a note id, use it directly with `./hackmd.sh get <id>`. Only when they give just a title, run `./hackmd.sh list` first to resolve the id, then `get <id>`.
 - **Save before edit**: when the user wants to edit a note, write the fetched markdown to a local file first (`./hackmd.sh get <id> > note.md`), so changes can be diffed before being pushed back with `update`.
 - **Confirm destructive ops**: always check with the user before `delete`, or before an `update` that overwrites a note Claude has not just fetched.
+- **Show before you push**: draft locally, present the full content to the user, and wait for an explicit go-ahead before running `update` / `create`. Same rule as `wiki-sync`'s "push must be reviewed first", for a different reason: **every subcommand spends one call against the monthly API quota (2000)**, so a push the user then asks you to redo costs two. A secondary reason is that `update` overwrites whatever the user last typed on their phone. `get` / `list` are read-only and need no sign-off — but don't poll with them either.
 - **No allowlist**: each `./hackmd.sh` call will trigger a permission prompt; this is intentional. Do not add the script to `.claude/settings.json`.
 
 ## Ownership scope (shared / non-owned notes)
