@@ -25,7 +25,7 @@ class HackMDHTTPError(Exception):
 
 def request(method, path, token, payload=None):
     url = f"{API_BASE}{path}"
-    data = json.dumps(payload).encode("utf-8") if payload is not None else None
+    data = json.dumps(payload, ensure_ascii=False).encode("utf-8") if payload is not None else None
     headers = {
         "Authorization": f"Bearer {token}",
         "Accept": "application/json",
